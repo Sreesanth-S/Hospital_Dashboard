@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useReactTable,
@@ -8,10 +8,13 @@ import {
   flexRender,
   createColumnHelper,
 } from "@tanstack/react-table";
-import { Eye } from "lucide-react";
+import { Eye, Trash2 } from "lucide-react";
 import { useStore } from "@/store";
 import type { Patient } from "@/types";
 import { formatDistanceToNow } from "date-fns";
+import { PatientRegistrationForm } from "@/components/PatientRegistrationForm";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
 
 const col = createColumnHelper<Patient>();
 
@@ -22,8 +25,9 @@ const riskColors = {
 };
 
 export function PatientTable() {
-  const { patients, searchQuery } = useStore();
+  const { patients, searchQuery, deletePatient } = useStore();
   const navigate = useNavigate();
+  const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null);
 
   const columns = useMemo(
     () => [
@@ -64,13 +68,21 @@ export function PatientTable() {
         id: "actions",
         header: "Actions",
         cell: (info) => (
-          <button
-            onClick={() => navigate(`/patient/${info.row.original.id}`)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            View
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => navigate(`/patient/${info.row.original.id}`)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              View
+            </button>
+            <button
+              onClick={() => setDeleteTarget(info.row.original)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         ),
       }),
     ],
@@ -95,9 +107,12 @@ export function PatientTable() {
 
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-border">
-        <h3 className="text-base font-semibold text-card-foreground">Patient Monitoring</h3>
-        <p className="text-xs text-muted-foreground mt-0.5">{filtered.length} patients being tracked</p>
+      <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+        <div>
+          <h3 className="text-base font-semibold text-card-foreground">Patient Monitoring</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{filtered.length} patients being tracked</p>
+        </div>
+        <PatientRegistrationForm />
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -128,6 +143,31 @@ export function PatientTable() {
           </tbody>
         </table>
       </div>
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Patient</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove <span className="font-semibold">{deleteTarget?.name}</span> from the system? This action cannot be undone and will also remove associated alerts.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteTarget) {
+                  deletePatient(deleteTarget.id);
+                  toast({ title: "Patient removed", description: `${deleteTarget.name} has been deleted.` });
+                  setDeleteTarget(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

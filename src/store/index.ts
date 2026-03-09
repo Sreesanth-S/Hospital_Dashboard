@@ -82,6 +82,15 @@ const alerts: Alert[] = patients
     resolved: false,
   }));
 
+interface NewPatientInput {
+  name: string;
+  age: number;
+  bloodGroup: string;
+  pregnancyWeek: number;
+  weightKg: number;
+  symptoms: string[];
+}
+
 interface StoreState {
   patients: Patient[];
   alerts: Alert[];
@@ -91,6 +100,8 @@ interface StoreState {
   setSearchQuery: (q: string) => void;
   resolveAlert: (id: string) => void;
   updateDoctorNotes: (patientId: string, notes: string) => void;
+  addPatient: (input: NewPatientInput) => void;
+  deletePatient: (id: string) => void;
 }
 
 export const useStore = create<StoreState>((set) => ({
@@ -104,4 +115,42 @@ export const useStore = create<StoreState>((set) => ({
     set((s) => ({ alerts: s.alerts.map((a) => (a.id === id ? { ...a, resolved: true } : a)) })),
   updateDoctorNotes: (patientId, notes) =>
     set((s) => ({ patients: s.patients.map((p) => (p.id === patientId ? { ...p, doctorNotes: notes } : p)) })),
+  addPatient: (input) =>
+    set((s) => {
+      const id = `P-${String(s.patients.length + 1).padStart(3, "0")}`;
+      const sys = rand(110, 135);
+      const dia = rand(65, 85);
+      const preeclampsia = rand(5, 30);
+      const hypertension = rand(5, 25);
+      const stress = rand(10, 30);
+      const avgRisk = (preeclampsia + hypertension + stress) / 3;
+      const riskLevel = avgRisk > 55 ? "High" : avgRisk > 30 ? "Moderate" : "Low";
+      const newPatient: Patient = {
+        id,
+        name: input.name,
+        age: input.age,
+        bloodGroup: input.bloodGroup,
+        pregnancyWeek: input.pregnancyWeek,
+        bloodPressure: `${sys}/${dia}`,
+        heartRate: rand(68, 95),
+        riskLevel: riskLevel as Patient["riskLevel"],
+        lastUpdated: new Date().toISOString(),
+        weightKg: input.weightKg,
+        symptoms: input.symptoms,
+        preeclampsiaRisk: preeclampsia,
+        hypertensionRisk: hypertension,
+        stressRisk: stress,
+        bpHistory: genBpHistory(input.pregnancyWeek),
+        weightHistory: genWeightHistory(input.pregnancyWeek, input.weightKg),
+        riskHistory: genRiskHistory(input.pregnancyWeek, Math.round(avgRisk)),
+        doctorNotes: "",
+        followUp: new Date(Date.now() + rand(1, 14) * 86400000).toISOString().split("T")[0],
+      };
+      return { patients: [...s.patients, newPatient] };
+    }),
+  deletePatient: (id) =>
+    set((s) => ({
+      patients: s.patients.filter((p) => p.id !== id),
+      alerts: s.alerts.filter((a) => a.patientId !== id),
+    })),
 }));
