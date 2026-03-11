@@ -4,6 +4,7 @@ import { StatCard } from "@/components/StatCard";
 import { PatientTable } from "@/components/PatientTable";
 import { RiskGaugeCard } from "@/components/RiskGaugeCard";
 import { AlertPanel } from "@/components/AlertPanel";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import { BPTrendChart, WeightChart, RiskScoreChart } from "@/components/HealthCharts";
 import { AnalyticsCharts } from "@/components/AnalyticsCharts";
 
@@ -67,6 +68,9 @@ export default function Dashboard() {
 
       {/* Alerts */}
       <AlertPanel />
+
+      {/* Notifications */}
+      <NotificationCenter />
 
       {/* Health Charts */}
       <div>

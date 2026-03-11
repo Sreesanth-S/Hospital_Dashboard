@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Patient, Alert } from "@/types";
+import type { Patient, Alert, Notification, NotificationType } from "@/types";
 
 const names = [
   "Amara Johnson", "Fatima Al-Hassan", "Priya Sharma", "Sofia Martinez",
@@ -147,11 +147,16 @@ interface NewPatientInput {
 interface StoreState {
   patients: Patient[];
   alerts: Alert[];
+  notifications: Notification[];
   selectedPatientId: string | null;
   searchQuery: string;
   setSelectedPatient: (id: string | null) => void;
   setSearchQuery: (q: string) => void;
   resolveAlert: (id: string) => void;
+  addNotification: (type: NotificationType, title: string, message: string, patientId?: string, action?: { label: string; path?: string }) => void;
+  markNotificationAsRead: (id: string) => void;
+  dismissNotification: (id: string) => void;
+  clearNotifications: () => void;
   updateDoctorNotes: (patientId: string, notes: string) => void;
   updatePatientVitals: (patientId: string, vitals: {
     bloodPressure?: string;
@@ -162,6 +167,7 @@ interface StoreState {
     hypertensionRisk?: number;
     stressRisk?: number;
   }) => void;
+  updatePatient: (patientId: string, input: NewPatientInput) => void;
   addPatient: (input: NewPatientInput) => void;
   deletePatient: (id: string) => void;
 }
@@ -169,12 +175,42 @@ interface StoreState {
 export const useStore = create<StoreState>((set) => ({
   patients,
   alerts,
+  notifications: [],
   selectedPatientId: null,
   searchQuery: "",
   setSelectedPatient: (id) => set({ selectedPatientId: id }),
   setSearchQuery: (q) => set({ searchQuery: q }),
   resolveAlert: (id) =>
     set((s) => ({ alerts: s.alerts.map((a) => (a.id === id ? { ...a, resolved: true } : a)) })),
+  
+  addNotification: (type, title, message, patientId?, action?) =>
+    set((s) => ({
+      notifications: [{
+        id: `N-${Date.now()}`,
+        type,
+        title,
+        message,
+        timestamp: new Date().toISOString(),
+        read: false,
+        patientId,
+        action,
+      }, ...s.notifications],
+    })),
+  
+  markNotificationAsRead: (id) =>
+    set((s) => ({
+      notifications: s.notifications.map((n) =>
+        n.id === id ? { ...n, read: true } : n
+      ),
+    })),
+  
+  dismissNotification: (id) =>
+    set((s) => ({
+      notifications: s.notifications.filter((n) => n.id !== id),
+    })),
+  
+  clearNotifications: () =>
+    set({ notifications: [] }),
   
   // Updated updateDoctorNotes to also update lastUpdated timestamp
   updateDoctorNotes: (patientId, notes) =>
@@ -216,7 +252,11 @@ export const useStore = create<StoreState>((set) => ({
 
       // Update alerts based on new risk level
       let updatedAlerts = s.alerts;
+      let notificationsToAdd: Notification[] = [];
       const existingAlert = s.alerts.find((a) => a.patientId === patientId && !a.resolved);
+      
+      // Check if risk level changed
+      const riskChanged = updatedPatient.riskLevel !== patient.riskLevel;
       
       if (updatedPatient.riskLevel === "High") {
         if (!existingAlert) {
@@ -235,16 +275,54 @@ export const useStore = create<StoreState>((set) => ({
           };
           updatedAlerts = [...s.alerts, newAlert];
         }
+        
+        if (riskChanged) {
+          notificationsToAdd.push({
+            id: `N-${Date.now()}`,
+            type: "alert",
+            title: "Risk Level Escalated",
+            message: `${updatedPatient.name} has been escalated to High risk. Immediate attention required.`,
+            timestamp: new Date().toISOString(),
+            read: false,
+            patientId,
+            action: { label: "View Patient", path: `/patient/${patientId}` },
+          });
+        }
       } else if (existingAlert && updatedPatient.riskLevel !== "High") {
         // Resolve alert if risk dropped below High
         updatedAlerts = updatedAlerts.map((a) =>
           a.id === existingAlert.id ? { ...a, resolved: true } : a
         );
+        
+        if (riskChanged) {
+          notificationsToAdd.push({
+            id: `N-${Date.now()}`,
+            type: "success",
+            title: "Risk Level Improved",
+            message: `${updatedPatient.name}'s risk level has improved to ${updatedPatient.riskLevel}.`,
+            timestamp: new Date().toISOString(),
+            read: false,
+            patientId,
+            action: { label: "View Patient", path: `/patient/${patientId}` },
+          });
+        }
+      } else if (!riskChanged) {
+        // Simple vitals update notification
+        notificationsToAdd.push({
+          id: `N-${Date.now()}`,
+          type: "info",
+          title: "Vitals Updated",
+          message: `${updatedPatient.name}'s vital signs have been recorded.`,
+          timestamp: new Date().toISOString(),
+          read: false,
+          patientId,
+        });
       }
 
       return {
         patients: s.patients.map((p) => (p.id === patientId ? updatedPatient : p)),
         alerts: updatedAlerts,
+        notifications: [...notificationsToAdd, ...s.notifications],
       };
     }),
 
@@ -338,6 +416,159 @@ export const useStore = create<StoreState>((set) => ({
       return { 
         patients: [...s.patients, newPatient],
         alerts: newAlerts,
+        notifications: [{
+          id: `N-${Date.now()}`,
+          type: riskLevel === "High" ? "alert" : "success",
+          title: "Patient Added",
+          message: `${newPatient.name} has been registered with ${riskLevel} risk level`,
+          timestamp: new Date().toISOString(),
+          read: false,
+          patientId: id,
+          action: { label: "View Profile", path: `/patient/${id}` },
+        }, ...s.notifications],
+      };
+    }),
+
+  updatePatient: (patientId, input) =>
+    set((s) => {
+      const existingPatient = s.patients.find((p) => p.id === patientId);
+      if (!existingPatient) return s;
+      
+      // Calculate BMI from height and weight
+      const heightM = input.heightCm / 100;
+      const bmi = input.weightKg / (heightM * heightM);
+      
+      // Adjust risk factors based on medical data
+      let preeclampsia = rand(5, 30);
+      let hypertension = rand(5, 25);
+      let stress = rand(10, 30);
+      
+      // Increase risk if patient has preeclampsia history
+      if (input.preeclampsiaHistory) {
+        preeclampsia += 20;
+      }
+      
+      // Increase risk if family history of preeclampsia
+      if (input.preeclampsiaFamilyHistory) {
+        preeclampsia += 15;
+      }
+      
+      // Increase hypertension risk if high BP
+      if (input.systolic > 140 || input.diastolic > 90) {
+        hypertension += 20;
+      }
+      
+      // Increase stress risk if low sleep
+      if (input.sleepHours < 6) {
+        stress += 15;
+      }
+      
+      // Clamp values to 0-100
+      preeclampsia = Math.min(100, Math.max(0, preeclampsia));
+      hypertension = Math.min(100, Math.max(0, hypertension));
+      stress = Math.min(100, Math.max(0, stress));
+      
+      const riskLevel = calculateRiskLevel(preeclampsia, hypertension, stress);
+      
+      const updatedPatient: Patient = {
+        ...existingPatient,
+        name: input.name,
+        age: input.age,
+        bloodGroup: input.bloodGroup,
+        pregnancyWeek: input.pregnancyWeek,
+        bloodPressure: `${input.systolic}/${input.diastolic}`,
+        heartRate: input.heartRate,
+        riskLevel,
+        lastUpdated: new Date().toISOString(),
+        weightKg: input.weightKg,
+        heightCm: input.heightCm,
+        bmi: parseFloat(bmi.toFixed(1)),
+        gravida: input.gravida,
+        headache: input.headache,
+        swelling: input.swelling,
+        sleepHours: input.sleepHours,
+        preeclampsiaHistory: input.preeclampsiaHistory,
+        preeclampsiaFamilyHistory: input.preeclampsiaFamilyHistory,
+        preeclampsiaFamilyRelationship: input.preeclampsiaFamilyRelationship,
+        symptoms: input.symptoms,
+        preeclampsiaRisk: preeclampsia,
+        hypertensionRisk: hypertension,
+        stressRisk: stress,
+      };
+      
+      // Update alerts based on new risk level
+      let updatedAlerts = s.alerts;
+      let notificationsToAdd: Notification[] = [];
+      const existingAlert = s.alerts.find((a) => a.patientId === patientId && !a.resolved);
+      const riskChanged = updatedPatient.riskLevel !== existingPatient.riskLevel;
+      
+      if (updatedPatient.riskLevel === "High") {
+        if (!existingAlert) {
+          const sys = input.systolic;
+          const newAlert: Alert = {
+            id: `A-${Date.now()}`,
+            patientId,
+            patientName: updatedPatient.name,
+            pregnancyWeek: updatedPatient.pregnancyWeek,
+            issue: sys > 140
+              ? `BP ${updatedPatient.bloodPressure} exceeds threshold`
+              : `High composite risk score (${Math.round((preeclampsia + hypertension) / 2)}%)`,
+            timestamp: new Date().toISOString(),
+            resolved: false,
+          };
+          updatedAlerts = [...s.alerts, newAlert];
+        }
+        
+        if (riskChanged) {
+          notificationsToAdd.push({
+            id: `N-${Date.now()}`,
+            type: "alert",
+            title: "Risk Level Escalated",
+            message: `${updatedPatient.name} has been escalated to High risk during update.`,
+            timestamp: new Date().toISOString(),
+            read: false,
+            patientId,
+            action: { label: "View Patient", path: `/patient/${patientId}` },
+          });
+        }
+      } else if (existingAlert && updatedPatient.riskLevel !== "High") {
+        // Resolve alert if risk dropped below High
+        updatedAlerts = updatedAlerts.map((a) =>
+          a.id === existingAlert.id ? { ...a, resolved: true } : a
+        );
+        
+        if (riskChanged) {
+          notificationsToAdd.push({
+            id: `N-${Date.now()}`,
+            type: "success",
+            title: "Risk Level Improved",
+            message: `${updatedPatient.name}'s risk level has improved to ${updatedPatient.riskLevel}.`,
+            timestamp: new Date().toISOString(),
+            read: false,
+            patientId,
+            action: { label: "View Patient", path: `/patient/${patientId}` },
+          });
+        }
+      }
+      
+      // Add profile update notification
+      if (!riskChanged) {
+        notificationsToAdd.push({
+          id: `N-${Date.now()}`,
+          type: "info",
+          title: "Patient Profile Updated",
+          message: `${updatedPatient.name}'s profile has been updated.`,
+          timestamp: new Date().toISOString(),
+          read: false,
+          patientId,
+          action: { label: "View Patient", path: `/patient/${patientId}` },
+        });
+      }
+      
+      return {
+        patients: s.patients.map((p) => (p.id === patientId ? updatedPatient : p)),
+        alerts: updatedAlerts,
+        notifications: [...notificationsToAdd, ...s.notifications],
       };
     }),
 

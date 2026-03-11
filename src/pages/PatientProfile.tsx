@@ -3,6 +3,7 @@ import { ArrowLeft, Calendar, Droplets, Heart, Activity } from "lucide-react";
 import { useStore } from "@/store";
 import { getRiskRecommendation } from "@/lib/patientUtils";
 import { RiskGaugeCard } from "@/components/RiskGaugeCard";
+import { UpdatePatientForm } from "@/components/UpdatePatientForm";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
@@ -47,11 +48,14 @@ export default function PatientProfile() {
               <p className="text-sm text-muted-foreground">ID: {patient.id}</p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-4 text-sm">
-            <InfoPill icon={Calendar} label="Age" value={`${patient.age} yrs`} />
-            <InfoPill icon={Droplets} label="Blood" value={patient.bloodGroup} />
-            <InfoPill icon={Heart} label="Week" value={`${patient.pregnancyWeek}w`} />
-            <InfoPill icon={Activity} label="HR" value={`${patient.heartRate} bpm`} />
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap gap-4 text-sm">
+              <InfoPill icon={Calendar} label="Age" value={`${patient.age} yrs`} />
+              <InfoPill icon={Droplets} label="Blood" value={patient.bloodGroup} />
+              <InfoPill icon={Heart} label="Week" value={`${patient.pregnancyWeek}w`} />
+              <InfoPill icon={Activity} label="HR" value={`${patient.heartRate} bpm`} />
+            </div>
+            <UpdatePatientForm patient={patient} />
           </div>
         </div>
       </div>

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Bell, LogOut, Settings } from "lucide-react";
+import { Search, Bell, LogOut, Settings, Moon, Sun } from "lucide-react";
 import { useStore } from "@/store";
 import { useAuthStore } from "@/store/auth";
+import { useThemeStore } from "@/store/theme";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,9 +14,11 @@ import {
 
 export function TopNavbar() {
   const navigate = useNavigate();
-  const { searchQuery, setSearchQuery, alerts } = useStore();
+  const { searchQuery, setSearchQuery, alerts, notifications } = useStore();
   const { user, logout } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
   const unresolvedCount = alerts.filter((a) => !a.resolved).length;
+  const unreadNotifications = notifications.filter((n) => !n.read).length;
 
   const handleLogout = () => {
     logout();
@@ -42,11 +45,23 @@ export function TopNavbar() {
       </div>
 
       <div className="flex items-center gap-4">
-        <button className="relative p-2 rounded-lg hover:bg-secondary transition-colors">
+        <button 
+          onClick={toggleTheme}
+          className="p-2 rounded-lg hover:bg-secondary transition-colors"
+          title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+        >
+          {theme === "light" ? (
+            <Moon className="w-5 h-5 text-muted-foreground" />
+          ) : (
+            <Sun className="w-5 h-5 text-muted-foreground" />
+          )}
+        </button>
+
+        <button className="relative p-2 rounded-lg hover:bg-secondary transition-colors" title="Alerts and Notifications">
           <Bell className="w-5 h-5 text-muted-foreground" />
-          {unresolvedCount > 0 && (
+          {(unresolvedCount + unreadNotifications) > 0 && (
             <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
-              {unresolvedCount}
+              {unresolvedCount + unreadNotifications}
             </span>
           )}
         </button>

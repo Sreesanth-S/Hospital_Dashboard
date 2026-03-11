@@ -45,6 +45,22 @@ export interface Alert {
   resolved: boolean;
 }
 
+export type NotificationType = "alert" | "info" | "warning" | "success";
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  patientId?: string;
+  action?: {
+    label: string;
+    path?: string;
+  };
+}
+
 export interface User {
   id: string;
   email: string;
