@@ -7,6 +7,7 @@ import {
   getFilteredRowModel,
   flexRender,
   createColumnHelper,
+  SortingState,
 } from "@tanstack/react-table";
 import { Eye, Trash2 } from "lucide-react";
 import { useStore } from "@/store";
@@ -24,10 +25,20 @@ const riskColors = {
   High: "bg-risk-high/15 text-risk-high",
 };
 
+// Calculate risk score (average of all risk factors)
+function calculateRiskScore(patient: Patient): number {
+  return Math.round((patient.preeclampsiaRisk + patient.hypertensionRisk + patient.stressRisk) / 3);
+}
+
 export function PatientTable() {
   const { patients, searchQuery, deletePatient } = useStore();
   const navigate = useNavigate();
   const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null);
+  
+  // Default sorting: by risk level (High > Moderate > Low) with high risk first, then by risk score (descending)
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "riskLevel", desc: false },
+  ]);
 
   const columns = useMemo(
     () => [
@@ -49,12 +60,37 @@ export function PatientTable() {
         header: "Risk",
         cell: (info) => {
           const level = info.getValue();
+          const patient = info.row.original;
+          const score = calculateRiskScore(patient);
           return (
-            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${riskColors[level]}`}>
-              {level}
-            </span>
+            <div className="flex flex-col gap-1">
+              <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${riskColors[level]}`}>
+                {level}
+              </span>
+              <span className="text-xs text-muted-foreground font-medium">
+                Score: {score}%
+              </span>
+            </div>
           );
         },
+        sortingFn: (a, b) => {
+          // Custom sorting: High > Moderate > Low
+          const riskOrder = { High: 3, Moderate: 2, Low: 1 };
+          const riskDiff = riskOrder[b.original.riskLevel] - riskOrder[a.original.riskLevel];
+          
+          // If same risk level, sort by risk score
+          if (riskDiff === 0) {
+            return calculateRiskScore(b.original) - calculateRiskScore(a.original);
+          }
+          return riskDiff;
+        },
+      }),
+      // Hidden column for risk score sorting
+      col.accessor((row) => calculateRiskScore(row), {
+        id: "riskScore",
+        header: "",
+        cell: (info) => null,
+        enableSorting: true,
       }),
       col.accessor("lastUpdated", {
         header: "Updated",
@@ -103,6 +139,10 @@ export function PatientTable() {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
   });
 
   return (

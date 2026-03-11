@@ -11,7 +11,20 @@ export interface Patient {
   riskLevel: RiskLevel;
   lastUpdated: string;
   weightKg: number;
+  heightCm: number;
+  bmi: number;
+  gravida: number;
   symptoms: string[];
+  headache: boolean;
+  swelling: {
+    face: boolean;
+    hand: boolean;
+    feet: boolean;
+  };
+  sleepHours: number;
+  preeclampsiaHistory: boolean;
+  preeclampsiaFamilyHistory: boolean;
+  preeclampsiaFamilyRelationship?: string;
   preeclampsiaRisk: number;
   hypertensionRisk: number;
   stressRisk: number;
@@ -30,4 +43,13 @@ export interface Alert {
   issue: string;
   timestamp: string;
   resolved: boolean;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: "admin" | "doctor" | "nurse";
+  specialization?: string;
+  hospitalName?: string;
 }

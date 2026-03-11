@@ -1,21 +1,25 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, BrainCircuit, Bell, BarChart3,
-  FileText, Settings, Heart
+  LayoutDashboard, Users, Settings, Heart, AlertTriangle
 } from "lucide-react";
+import { useAuthStore } from "@/store/auth";
 
 const navItems = [
   { title: "Dashboard", path: "/", icon: LayoutDashboard },
   { title: "Patients", path: "/patients", icon: Users },
-  { title: "Risk Predictions", path: "/predictions", icon: BrainCircuit },
-  { title: "Alerts", path: "/alerts", icon: Bell },
-  { title: "Analytics", path: "/analytics", icon: BarChart3 },
-  { title: "Reports", path: "/reports", icon: FileText },
+  { title: "Risk Assessment", path: "/risk-assessment", icon: AlertTriangle },
   { title: "Settings", path: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
   const location = useLocation();
+  const { user } = useAuthStore();
+
+  const userInitials = user?.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase() || "U";
 
   return (
     <aside className="hidden md:flex flex-col w-64 min-h-screen bg-sidebar border-r border-sidebar-border">
@@ -52,11 +56,11 @@ export function AppSidebar() {
       <div className="px-4 py-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3 px-2">
           <div className="w-8 h-8 rounded-full bg-sidebar-primary flex items-center justify-center text-xs font-bold text-sidebar-primary-foreground">
-            DR
+            {userInitials}
           </div>
           <div>
-            <p className="text-xs font-semibold text-sidebar-accent-foreground">Dr. Rebecca</p>
-            <p className="text-[11px] text-sidebar-muted">OB-GYN</p>
+            <p className="text-xs font-semibold text-sidebar-accent-foreground">{user?.name || "User"}</p>
+            <p className="text-[11px] text-sidebar-muted capitalize">{user?.role || "Admin"}</p>
           </div>
         </div>
       </div>

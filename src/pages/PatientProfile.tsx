@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Droplets, Heart, Activity } from "lucide-react";
 import { useStore } from "@/store";
+import { getRiskRecommendation } from "@/lib/patientUtils";
 import { RiskGaugeCard } from "@/components/RiskGaugeCard";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -23,8 +24,7 @@ export default function PatientProfile() {
     );
   }
 
-  const getRec = (pct: number) =>
-    pct > 65 ? "Immediate clinical evaluation recommended." : pct > 35 ? "Schedule follow-up within 48 hours." : "Continue routine monitoring.";
+  const getRec = (pct: number) => getRiskRecommendation(pct);
 
   return (
     <div className="space-y-6">
