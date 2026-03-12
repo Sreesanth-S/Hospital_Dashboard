@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend,
@@ -8,7 +8,15 @@ import { useStore } from "@/store/supabaseStore";
 export function BPTrendChart() {
   const { patients } = useStore();
   const [selectedId, setSelectedId] = useState(patients[0]?.id);
+
+  useEffect(() => {
+    if (!selectedId || !patients.some((patient) => patient.id === selectedId)) {
+      setSelectedId(patients[0]?.id);
+    }
+  }, [patients, selectedId]);
+
   const patient = patients.find((p) => p.id === selectedId);
+  const chartData = [...(patient?.bpHistory ?? [])].sort((a, b) => a.week - b.week);
 
   return (
     <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
@@ -25,7 +33,7 @@ export function BPTrendChart() {
         </select>
       </div>
       <ResponsiveContainer width="100%" height={220}>
-        <LineChart data={patient?.bpHistory ?? []}>
+        <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(210 20% 91%)" />
           <XAxis dataKey="week" tick={{ fontSize: 11 }} tickFormatter={(w) => `W${w}`} />
           <YAxis tick={{ fontSize: 11 }} domain={[50, 170]} />
@@ -42,7 +50,15 @@ export function BPTrendChart() {
 export function WeightChart() {
   const { patients } = useStore();
   const [selectedId, setSelectedId] = useState(patients[0]?.id);
+
+  useEffect(() => {
+    if (!selectedId || !patients.some((patient) => patient.id === selectedId)) {
+      setSelectedId(patients[0]?.id);
+    }
+  }, [patients, selectedId]);
+
   const patient = patients.find((p) => p.id === selectedId);
+  const chartData = [...(patient?.weightHistory ?? [])].sort((a, b) => a.week - b.week);
 
   return (
     <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
@@ -59,7 +75,7 @@ export function WeightChart() {
         </select>
       </div>
       <ResponsiveContainer width="100%" height={220}>
-        <LineChart data={patient?.weightHistory ?? []}>
+        <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(210 20% 91%)" />
           <XAxis dataKey="week" tick={{ fontSize: 11 }} tickFormatter={(w) => `W${w}`} />
           <YAxis tick={{ fontSize: 11 }} />
@@ -74,7 +90,15 @@ export function WeightChart() {
 export function RiskScoreChart() {
   const { patients } = useStore();
   const [selectedId, setSelectedId] = useState(patients[0]?.id);
+
+  useEffect(() => {
+    if (!selectedId || !patients.some((patient) => patient.id === selectedId)) {
+      setSelectedId(patients[0]?.id);
+    }
+  }, [patients, selectedId]);
+
   const patient = patients.find((p) => p.id === selectedId);
+  const chartData = [...(patient?.riskHistory ?? [])].sort((a, b) => a.week - b.week);
 
   return (
     <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
@@ -91,7 +115,7 @@ export function RiskScoreChart() {
         </select>
       </div>
       <ResponsiveContainer width="100%" height={220}>
-        <AreaChart data={patient?.riskHistory ?? []}>
+        <AreaChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(210 20% 91%)" />
           <XAxis dataKey="week" tick={{ fontSize: 11 }} tickFormatter={(w) => `W${w}`} />
           <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} />

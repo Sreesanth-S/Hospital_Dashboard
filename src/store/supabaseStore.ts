@@ -56,6 +56,51 @@ function genRiskHistory(weeks: number, baseRisk: number) {
   return arr;
 }
 
+function parseBloodPressure(bloodPressure: string) {
+  const [systolic = "0", diastolic = "0"] = bloodPressure.split("/");
+  return {
+    systolic: parseInt(systolic, 10) || 0,
+    diastolic: parseInt(diastolic, 10) || 0,
+  };
+}
+
+function averageRisk(patient: Pick<Patient, "preeclampsiaRisk" | "hypertensionRisk" | "stressRisk">) {
+  return Math.round((patient.preeclampsiaRisk + patient.hypertensionRisk + patient.stressRisk) / 3);
+}
+
+function mergeWeeklyEntries<T extends { week: number }>(entries: T[], currentEntry: T) {
+  const byWeek = new Map<number, T>();
+
+  [...entries, currentEntry]
+    .sort((a, b) => a.week - b.week)
+    .forEach((entry) => {
+      byWeek.set(entry.week, entry);
+    });
+
+  return [...byWeek.values()].sort((a, b) => a.week - b.week);
+}
+
+function syncPatientHistories(patient: Patient): Patient {
+  const { systolic, diastolic } = parseBloodPressure(patient.bloodPressure);
+
+  return {
+    ...patient,
+    bpHistory: mergeWeeklyEntries(patient.bpHistory ?? [], {
+      week: patient.pregnancyWeek,
+      systolic,
+      diastolic,
+    }),
+    weightHistory: mergeWeeklyEntries(patient.weightHistory ?? [], {
+      week: patient.pregnancyWeek,
+      weight: Number(patient.weightKg.toFixed(1)),
+    }),
+    riskHistory: mergeWeeklyEntries(patient.riskHistory ?? [], {
+      week: patient.pregnancyWeek,
+      score: averageRisk(patient),
+    }),
+  };
+}
+
 function calculateRiskLevel(
   preeclampsiaRisk: number,
   hypertensionRisk: number,
@@ -133,7 +178,7 @@ export const useStore = create<StoreState>((set, get) => ({
   fetchAllPatients: async () => {
     try {
       set({ isLoading: true, error: null });
-      const patients = await patientService.fetchAllPatients();
+      const patients = (await patientService.fetchAllPatients()).map(syncPatientHistories);
       set({ patients, isLoading: false });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to fetch patients";
@@ -271,7 +316,7 @@ export const useStore = create<StoreState>((set, get) => ({
         return;
       }
 
-      const updatedPatient = { ...patient, ...vitals, lastUpdated: new Date().toISOString() };
+      const updatedPatient = syncPatientHistories({ ...patient, ...vitals, lastUpdated: new Date().toISOString() });
 
       if (
         vitals.preeclampsiaRisk !== undefined ||
@@ -288,7 +333,7 @@ export const useStore = create<StoreState>((set, get) => ({
       // Save to Supabase
       await patientService.updatePatient(patientId, updatedPatient);
 
-      let notificationsToAdd: Notification[] = [];
+      const notificationsToAdd: Notification[] = [];
       const existingAlert = get().alerts.find((a) => a.patientId === patientId && !a.resolved);
       const riskChanged = updatedPatient.riskLevel !== patient.riskLevel;
 
@@ -398,7 +443,7 @@ export const useStore = create<StoreState>((set, get) => ({
       const riskLevel = calculateRiskLevel(preeclampsia, hypertension, stress);
       const avgRisk = (preeclampsia + hypertension + stress) / 3;
 
-      const newPatient: Patient = {
+      const newPatient = syncPatientHistories({
         id: `P-${Date.now()}`,
         name: input.name,
         age: input.age,
@@ -427,7 +472,7 @@ export const useStore = create<StoreState>((set, get) => ({
         riskHistory: genRiskHistory(input.pregnancyWeek, Math.round(avgRisk)),
         doctorNotes: "",
         followUp: new Date(Date.now() + rand(1, 14) * 86400000).toISOString().split("T")[0],
-      };
+      });
 
       // Save to Supabase
       const savedPatient = await patientService.createPatient(newPatient);
@@ -502,7 +547,7 @@ export const useStore = create<StoreState>((set, get) => ({
 
       const riskLevel = calculateRiskLevel(preeclampsia, hypertension, stress);
 
-      const updatedPatient: Patient = {
+      const updatedPatient = syncPatientHistories({
         ...existingPatient,
         name: input.name,
         age: input.age,
@@ -526,13 +571,13 @@ export const useStore = create<StoreState>((set, get) => ({
         preeclampsiaRisk: preeclampsia,
         hypertensionRisk: hypertension,
         stressRisk: stress,
-      };
+      });
 
       // Save to Supabase
       await patientService.updatePatient(patientId, updatedPatient);
 
       let updatedAlerts = get().alerts;
-      let notificationsToAdd: Notification[] = [];
+      const notificationsToAdd: Notification[] = [];
       const existingAlert = get().alerts.find((a) => a.patientId === patientId && !a.resolved);
       const riskChanged = updatedPatient.riskLevel !== existingPatient.riskLevel;
 

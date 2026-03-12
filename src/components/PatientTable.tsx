@@ -42,6 +42,10 @@ export function PatientTable() {
 
   const columns = useMemo(
     () => [
+      col.accessor("id", {
+        header: "Patient ID",
+        cell: (info) => <span className="font-mono text-xs text-muted-foreground">{info.getValue()}</span>,
+      }),
       col.accessor("name", {
         header: "Patient Name",
         cell: (info) => <span className="font-semibold text-foreground">{info.getValue()}</span>,

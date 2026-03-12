@@ -6,12 +6,42 @@ import { RiskGaugeCard } from "@/components/RiskGaugeCard";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { BPTrendChart, WeightChart, RiskScoreChart } from "@/components/HealthCharts";
 import { AnalyticsCharts } from "@/components/AnalyticsCharts";
+import type { Alert, Patient } from "@/types";
+
+const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000;
+
+function countWithinWindow<T>(items: T[], getTimestamp: (item: T) => string, start: number, end: number) {
+  return items.filter((item) => {
+    const timestamp = new Date(getTimestamp(item)).getTime();
+    return Number.isFinite(timestamp) && timestamp >= start && timestamp < end;
+  }).length;
+}
+
+function calculateTrend<T>(items: T[], getTimestamp: (item: T) => string) {
+  const now = Date.now();
+  const currentPeriodStart = now - WEEK_IN_MS;
+  const previousPeriodStart = currentPeriodStart - WEEK_IN_MS;
+  const currentCount = countWithinWindow(items, getTimestamp, currentPeriodStart, now);
+  const previousCount = countWithinWindow(items, getTimestamp, previousPeriodStart, currentPeriodStart);
+
+  if (previousCount === 0) {
+    return currentCount === 0 ? 0 : 100;
+  }
+
+  return Math.round(((currentCount - previousCount) / previousCount) * 100);
+}
 
 export default function Dashboard() {
-  const { patients } = useStore();
+  const { patients, alerts } = useStore();
 
   const highRisk = patients.filter((p) => p.riskLevel === "High");
+  const lowRisk = patients.filter((p) => p.riskLevel === "Low");
+  const unresolvedAlerts = alerts.filter((alert) => !alert.resolved);
   const topRisk = [...patients].sort((a, b) => b.preeclampsiaRisk - a.preeclampsiaRisk).slice(0, 3);
+  const totalPatientsTrend = calculateTrend<Patient>(patients, (patient) => patient.lastUpdated);
+  const highRiskTrend = calculateTrend<Patient>(highRisk, (patient) => patient.lastUpdated);
+  const criticalAlertsTrend = calculateTrend<Alert>(unresolvedAlerts, (alert) => alert.timestamp);
+  const normalMonitoringTrend = calculateTrend<Patient>(lowRisk, (patient) => patient.lastUpdated);
 
   const getRec = (pct: number) =>
     pct > 65
@@ -29,10 +59,10 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Patients" value={patients.length} icon={Users} trend={12} />
-        <StatCard title="High Risk" value={highRisk.length} icon={ShieldAlert} trend={-3} variant="danger" />
-        <StatCard title="Critical Alerts" value={highRisk.length} icon={AlertTriangle} trend={5} variant="warning" />
-        <StatCard title="Normal Monitoring" value={patients.filter((p) => p.riskLevel === "Low").length} icon={HeartPulse} trend={8} variant="success" />
+        <StatCard title="Total Patients" value={patients.length} icon={Users} trend={totalPatientsTrend} />
+        <StatCard title="High Risk" value={highRisk.length} icon={ShieldAlert} trend={highRiskTrend} variant="danger" />
+        <StatCard title="Critical Alerts" value={unresolvedAlerts.length} icon={AlertTriangle} trend={criticalAlertsTrend} variant="warning" />
+        <StatCard title="Normal Monitoring" value={lowRisk.length} icon={HeartPulse} trend={normalMonitoringTrend} variant="success" />
       </div>
 
       {/* Patient Table */}
