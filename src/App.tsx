@@ -9,12 +9,17 @@ import Dashboard from "./pages/Dashboard";
 import Patients from "./pages/Patients";
 import PatientProfile from "./pages/PatientProfile";
 import RiskAssessment from "./pages/RiskAssessment";
+import Alerts from "./pages/Alerts";
 import Settings from "./pages/Settings";
+import Notifications from "./pages/Notifications";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import { useAuthStore } from "@/store/auth";
 import { useThemeStore } from "@/store/theme";
+import { useStore } from "@/store/supabaseStore";
 
 const queryClient = new QueryClient();
 
@@ -39,22 +44,31 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const App = () => {
   const { initializeAuth } = useAuthStore();
   const { initializeTheme } = useThemeStore();
+  const initializeData = useStore((state) => state.initializeData);
 
   useEffect(() => {
     initializeAuth();
     initializeTheme();
-  }, [initializeAuth, initializeTheme]);
+    initializeData();
+  }, [initializeAuth, initializeTheme, initializeData]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
           <Routes>
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Protected Routes */}
             <Route
@@ -67,6 +81,8 @@ const App = () => {
                       <Route path="/patients" element={<Patients />} />
                       <Route path="/patient/:id" element={<PatientProfile />} />
                       <Route path="/risk-assessment" element={<RiskAssessment />} />
+                      <Route path="/alerts" element={<Alerts />} />
+                      <Route path="/notifications" element={<Notifications />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>

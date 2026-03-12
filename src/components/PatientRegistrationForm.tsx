@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { UserPlus } from "lucide-react";
-import { useStore } from "@/store";
+import { useStore } from "@/store/supabaseStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -153,7 +153,7 @@ export function PatientRegistrationForm() {
                   <FormField control={form.control} name="age" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Age (years)</FormLabel>
-                      <FormControl><Input type="number" placeholder="28" {...field} /></FormControl>
+                      <FormControl><Input type="number" placeholder="28" {...field} value={field.value ?? ""} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -176,7 +176,7 @@ export function PatientRegistrationForm() {
                   <FormField control={form.control} name="gravida" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Gravida (# of pregnancies)</FormLabel>
-                      <FormControl><Input type="number" placeholder="1" {...field} /></FormControl>
+                      <FormControl><Input type="number" placeholder="1" {...field} value={field.value ?? ""} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -191,7 +191,7 @@ export function PatientRegistrationForm() {
                 <FormField control={form.control} name="pregnancyWeek" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Gestational Week</FormLabel>
-                    <FormControl><Input type="number" placeholder="12" {...field} /></FormControl>
+                    <FormControl><Input type="number" placeholder="12" {...field} value={field.value ?? ""} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -211,6 +211,7 @@ export function PatientRegistrationForm() {
                           type="number"
                           placeholder="165"
                           {...field}
+                          value={field.value ?? ""}
                           onChange={(e) => {
                             field.onChange(e);
                             calculateBMI(weightKg, parseFloat(e.target.value));
@@ -229,6 +230,7 @@ export function PatientRegistrationForm() {
                           step="0.1"
                           placeholder="65"
                           {...field}
+                          value={field.value ?? ""}
                           onChange={(e) => {
                             field.onChange(e);
                             calculateBMI(parseFloat(e.target.value), heightCm);
@@ -260,21 +262,21 @@ export function PatientRegistrationForm() {
                   <FormField control={form.control} name="systolic" render={({ field }) => (
                     <FormItem>
                       <FormLabel>BP Systolic (mmHg)</FormLabel>
-                      <FormControl><Input type="number" placeholder="120" {...field} /></FormControl>
+                      <FormControl><Input type="number" placeholder="120" {...field} value={field.value ?? ""} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={form.control} name="diastolic" render={({ field }) => (
                     <FormItem>
                       <FormLabel>BP Diastolic (mmHg)</FormLabel>
-                      <FormControl><Input type="number" placeholder="80" {...field} /></FormControl>
+                      <FormControl><Input type="number" placeholder="80" {...field} value={field.value ?? ""} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={form.control} name="heartRate" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Heart Rate (bpm)</FormLabel>
-                      <FormControl><Input type="number" placeholder="72" {...field} /></FormControl>
+                      <FormControl><Input type="number" placeholder="72" {...field} value={field.value ?? ""} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -328,7 +330,7 @@ export function PatientRegistrationForm() {
                 <FormField control={form.control} name="sleepHours" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Sleep Hours (per day)</FormLabel>
-                    <FormControl><Input type="number" step="0.5" placeholder="8" {...field} /></FormControl>
+                    <FormControl><Input type="number" step="0.5" placeholder="8" {...field} value={field.value ?? ""} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />

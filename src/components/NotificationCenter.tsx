@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useStore } from "@/store";
+import { useStore } from "@/store/supabaseStore";
 import { AlertTriangle, Info, CheckCircle, AlertCircle, X, ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { NotificationType } from "@/types";

@@ -1,6 +1,6 @@
 import { AlertTriangle, Eye, CheckCircle, Phone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useStore } from "@/store";
+import { useStore } from "@/store/supabaseStore";
 import { formatDistanceToNow } from "date-fns";
 
 export function AlertPanel() {

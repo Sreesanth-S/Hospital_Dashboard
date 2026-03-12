@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Settings, Heart, AlertTriangle
+  LayoutDashboard, Users, Settings, Heart, AlertTriangle, Bell
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 
@@ -8,6 +8,7 @@ const navItems = [
   { title: "Dashboard", path: "/", icon: LayoutDashboard },
   { title: "Patients", path: "/patients", icon: Users },
   { title: "Risk Assessment", path: "/risk-assessment", icon: AlertTriangle },
+  { title: "Alerts", path: "/alerts", icon: Bell },
   { title: "Settings", path: "/settings", icon: Settings },
 ];
 

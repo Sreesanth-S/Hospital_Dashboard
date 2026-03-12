@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Search, Bell, LogOut, Settings, Moon, Sun } from "lucide-react";
-import { useStore } from "@/store";
+import { useStore } from "@/store/supabaseStore";
 import { useAuthStore } from "@/store/auth";
 import { useThemeStore } from "@/store/theme";
 import {
@@ -14,14 +13,14 @@ import {
 
 export function TopNavbar() {
   const navigate = useNavigate();
-  const { searchQuery, setSearchQuery, alerts, notifications } = useStore();
+  const location = useLocation();
+  const { searchQuery, setSearchQuery, notifications } = useStore();
   const { user, logout } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
-  const unresolvedCount = alerts.filter((a) => !a.resolved).length;
   const unreadNotifications = notifications.filter((n) => !n.read).length;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 
@@ -30,6 +29,7 @@ export function TopNavbar() {
     .map((n) => n[0])
     .join("")
     .toUpperCase() || "U";
+  const isNotificationsActive = location.pathname === "/notifications";
 
   return (
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 shrink-0">
@@ -57,11 +57,17 @@ export function TopNavbar() {
           )}
         </button>
 
-        <button className="relative p-2 rounded-lg hover:bg-secondary transition-colors" title="Alerts and Notifications">
+        <button
+          onClick={() => navigate("/notifications")}
+          className={`relative p-2 rounded-lg transition-colors ${
+            isNotificationsActive ? "bg-secondary" : "hover:bg-secondary"
+          }`}
+          title="Notifications"
+        >
           <Bell className="w-5 h-5 text-muted-foreground" />
-          {(unresolvedCount + unreadNotifications) > 0 && (
+          {unreadNotifications > 0 && (
             <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
-              {unresolvedCount + unreadNotifications}
+              {unreadNotifications}
             </span>
           )}
         </button>

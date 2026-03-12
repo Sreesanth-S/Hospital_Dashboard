@@ -3,7 +3,7 @@ import {
   LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { useStore } from "@/store";
+import { useStore } from "@/store/supabaseStore";
 
 export function BPTrendChart() {
   const { patients } = useStore();

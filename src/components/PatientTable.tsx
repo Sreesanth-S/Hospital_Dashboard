@@ -10,7 +10,7 @@ import {
   SortingState,
 } from "@tanstack/react-table";
 import { Eye, Trash2 } from "lucide-react";
-import { useStore } from "@/store";
+import { useStore } from "@/store/supabaseStore";
 import type { Patient } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import { PatientRegistrationForm } from "@/components/PatientRegistrationForm";

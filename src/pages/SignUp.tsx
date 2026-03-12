@@ -123,11 +123,14 @@ export default function SignUp() {
         hospitalName: formData.hospitalName,
       });
 
+      const loggedIn = useAuthStore.getState().isAuthenticated;
       toast({
         title: "Success",
-        description: "Account created successfully! Welcome to Our Moment.",
+        description: loggedIn
+          ? "Account created successfully! Welcome to Our Moment."
+          : "Account created. Please check your email to confirm your account before signing in.",
       });
-      navigate("/");
+      navigate(loggedIn ? "/" : "/login");
     } catch (error) {
       toast({
         title: "Sign Up Failed",

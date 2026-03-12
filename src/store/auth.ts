@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import type { User } from "@/types";
+import { supabase } from "@/lib/supabase";
+import { userService } from "@/lib/services/userService";
 
 interface AuthState {
   user: User | null;
@@ -14,49 +16,25 @@ interface AuthState {
     specialization?: string;
     hospitalName?: string;
   }) => Promise<void>;
-  logout: () => void;
+  forgotPassword: (email: string) => Promise<void>;
+  logout: () => Promise<void>;
   initializeAuth: () => void;
 }
 
-// Demo user for testing
-const DEMO_USERS = [
-  {
-    id: "U-1001",
-    email: "doctor@hospital.com",
-    password: "doctor123",
-    name: "Dr. Rebecca Cole",
-    role: "doctor" as const,
-    specialization: "OB-GYN",
-    hospitalName: "Central Medical Hospital",
-  },
-  {
-    id: "U-1002",
-    email: "admin@hospital.com",
-    password: "admin123",
-    name: "Admin Sarah",
-    role: "admin" as const,
-    hospitalName: "Central Medical Hospital",
-  },
-  {
-    id: "U-1003",
-    email: "nurse@hospital.com",
-    password: "nurse123",
-    name: "Nurse Jennifer",
-    role: "nurse" as const,
-    specialization: "Midwifery",
-    hospitalName: "Central Medical Hospital",
-  },
-];
-
-// Simple hash for demo purposes (NOT FOR PRODUCTION)
-function simpleHash(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return `h_${Math.abs(hash).toString(36)}`;
+function mapAuthUserToUser(authUser: any): User {
+  const meta = authUser?.user_metadata ?? {};
+  const metadataRole = meta.role;
+  const role = metadataRole === "admin" || metadataRole === "doctor" || metadataRole === "nurse"
+    ? metadataRole
+    : "doctor";
+  return {
+    id: authUser.id,
+    email: authUser.email ?? "",
+    name: meta.name || authUser.email || "User",
+    role,
+    specialization: meta.specialization || undefined,
+    hospitalName: meta.hospitalName || undefined,
+  };
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -65,64 +43,60 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   initializeAuth: () => {
-    // Initialize registered users with demo users (hashed passwords)
-    const savedUsers = localStorage.getItem("registeredUsers");
-    if (!savedUsers) {
-      const hashedDemoUsers = DEMO_USERS.map((u) => ({
-        ...u,
-        password: simpleHash(u.password),
-      }));
-      localStorage.setItem("registeredUsers", JSON.stringify(hashedDemoUsers));
-    }
-
-    // Load user from localStorage on app startup
-    const savedUser = localStorage.getItem("currentUser");
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser);
-        // Validate user session is still valid
-        if (user && user.id && user.email) {
-          set({ user, isAuthenticated: true });
-        } else {
-          localStorage.removeItem("currentUser");
+    supabase.auth
+      .getSession()
+      .then(async ({ data, error }) => {
+        if (error) {
+          throw error;
         }
-      } catch (error) {
-        console.error("Failed to load user from localStorage", error);
-        localStorage.removeItem("currentUser");
-      }
-    }
-    set({ isLoading: false });
+
+        const authUser = data.session?.user;
+        if (authUser) {
+          const mappedUser = mapAuthUserToUser(authUser);
+          await userService.upsertUser(mappedUser);
+          set({
+            user: mappedUser,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+          return;
+        }
+
+        set({ user: null, isAuthenticated: false, isLoading: false });
+      })
+      .catch((error) => {
+        console.error("Failed to initialize auth session", error);
+        set({ user: null, isAuthenticated: false, isLoading: false });
+      });
   },
 
   login: async (email: string, password: string) => {
     set({ isLoading: true });
     try {
-      // Validate inputs
       if (!email || !password) {
         throw new Error("Email and password are required");
       }
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      // Check against registered users in localStorage
-      const registeredUsers = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
-      const hashedPassword = simpleHash(password);
-      
-      const user = registeredUsers.find(
-        (u: any) => u.email === email && u.password === hashedPassword
-      );
-
-      if (!user) {
-        throw new Error("Invalid email or password");
+      if (error) {
+        throw error;
       }
 
-      // Remove password from stored user
-      const { password: _, ...userWithoutPassword } = user;
-      localStorage.setItem("currentUser", JSON.stringify(userWithoutPassword));
-      set({ user: userWithoutPassword, isAuthenticated: true });
+      const authUser = data.user;
+      if (!authUser) {
+        throw new Error("Login failed. Please try again.");
+      }
+
+      const mappedUser = mapAuthUserToUser(authUser);
+      await userService.upsertUser(mappedUser);
+      set({ user: mappedUser, isAuthenticated: true });
     } catch (error) {
-      throw error;
+      if (error instanceof Error) throw error;
+      throw new Error("Unable to sign in");
     } finally {
       set({ isLoading: false });
     }
@@ -131,7 +105,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   signup: async (data) => {
     set({ isLoading: true });
     try {
-      // Validate inputs
       if (!data.email || !data.password || !data.name) {
         throw new Error("Email, password, and name are required");
       }
@@ -140,42 +113,58 @@ export const useAuthStore = create<AuthState>((set) => ({
         throw new Error("Password must be at least 6 characters");
       }
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const { data: signUpData, error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            name: data.name,
+            role: data.role,
+            specialization: data.specialization || null,
+            hospitalName: data.hospitalName || null,
+          },
+        },
+      });
 
-      // Check if email already exists
-      const registeredUsers = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
-      if (registeredUsers.some((u: any) => u.email === data.email)) {
-        throw new Error("Email already registered");
+      if (error) {
+        throw error;
       }
 
-      // Create new user with hashed password
-      const newUser = {
-        id: `U-${Date.now()}`,
-        email: data.email,
-        password: simpleHash(data.password),
-        name: data.name,
-        role: data.role,
-        specialization: data.specialization,
-        hospitalName: data.hospitalName,
-      };
-
-      registeredUsers.push(newUser);
-      localStorage.setItem("registeredUsers", JSON.stringify(registeredUsers));
-
-      // Auto login after signup
-      const { password: _, ...userWithoutPassword } = newUser;
-      localStorage.setItem("currentUser", JSON.stringify(userWithoutPassword));
-      set({ user: userWithoutPassword, isAuthenticated: true });
+      const authUser = signUpData.user;
+      const hasSession = !!signUpData.session;
+      if (authUser) {
+        await userService.upsertUser(mapAuthUserToUser(authUser));
+      }
+      set({
+        user: authUser && hasSession ? mapAuthUserToUser(authUser) : null,
+        isAuthenticated: hasSession,
+      });
     } catch (error) {
-      throw error;
+      if (error instanceof Error) throw error;
+      throw new Error("Unable to create account");
     } finally {
       set({ isLoading: false });
     }
   },
 
-  logout: () => {
-    localStorage.removeItem("currentUser");
+  forgotPassword: async (email: string) => {
+    if (!email) {
+      throw new Error("Email is required");
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      throw error;
+    }
+  },
+
+  logout: async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      throw error;
+    }
     set({ user: null, isAuthenticated: false });
   },
 }));

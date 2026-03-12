@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { AlertTriangle, TrendingUp, ActivitySquare, Zap, Search } from "lucide-react";
-import { useStore } from "@/store";
+import { useStore } from "@/store/supabaseStore";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";

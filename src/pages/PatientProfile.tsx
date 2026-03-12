@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Droplets, Heart, Activity } from "lucide-react";
-import { useStore } from "@/store";
+import { useStore } from "@/store/supabaseStore";
 import { getRiskRecommendation } from "@/lib/patientUtils";
 import { RiskGaugeCard } from "@/components/RiskGaugeCard";
 import { UpdatePatientForm } from "@/components/UpdatePatientForm";

@@ -1,9 +1,8 @@
 import { Users, AlertTriangle, ShieldAlert, HeartPulse } from "lucide-react";
-import { useStore } from "@/store";
+import { useStore } from "@/store/supabaseStore";
 import { StatCard } from "@/components/StatCard";
 import { PatientTable } from "@/components/PatientTable";
 import { RiskGaugeCard } from "@/components/RiskGaugeCard";
-import { AlertPanel } from "@/components/AlertPanel";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { BPTrendChart, WeightChart, RiskScoreChart } from "@/components/HealthCharts";
 import { AnalyticsCharts } from "@/components/AnalyticsCharts";
@@ -65,9 +64,6 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
-
-      {/* Alerts */}
-      <AlertPanel />
 
       {/* Notifications */}
       <NotificationCenter />

@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import { useThemeStore } from "@/store/theme";
 
 export default function Settings() {
-  const [darkMode, setDarkMode] = useState(true);
+  const { theme, setTheme } = useThemeStore();
+  const darkMode = theme === "dark";
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [dataRetention, setDataRetention] = useState("30");
@@ -20,12 +22,9 @@ export default function Settings() {
   // Load settings from localStorage on mount
   useEffect(() => {
     const savedSettings = localStorage.getItem("appSettings");
-    let isDarkMode = true;
     
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
-      isDarkMode = settings.darkMode ?? true;
-      setDarkMode(isDarkMode);
       setEmailNotifications(settings.emailNotifications ?? true);
       setPushNotifications(settings.pushNotifications ?? true);
       setDataRetention(settings.dataRetention ?? "30");
@@ -33,23 +32,10 @@ export default function Settings() {
       setDoctorName(settings.doctorName ?? "Dr. Rebecca");
       setSpecialization(settings.specialization ?? "OB-GYN");
     }
-
-    // Apply dark mode
-    applyDarkMode(isDarkMode);
   }, []);
 
-  const applyDarkMode = (isDark: boolean) => {
-    const html = document.documentElement;
-    if (isDark) {
-      html.classList.add("dark");
-    } else {
-      html.classList.remove("dark");
-    }
-  };
-
   const handleDarkModeToggle = (value: boolean) => {
-    setDarkMode(value);
-    applyDarkMode(value);
+    setTheme(value ? "dark" : "light");
   };
 
   const handleSaveSettings = async () => {
@@ -82,14 +68,13 @@ export default function Settings() {
 
   const handleResetSettings = () => {
     localStorage.removeItem("appSettings");
-    setDarkMode(true);
     setEmailNotifications(true);
     setPushNotifications(true);
     setDataRetention("30");
     setHospitalsFilter("");
     setDoctorName("Dr. Rebecca");
     setSpecialization("OB-GYN");
-    applyDarkMode(true);
+    setTheme("light");
     toast({
       title: "Reset",
       description: "Settings have been reset to defaults",

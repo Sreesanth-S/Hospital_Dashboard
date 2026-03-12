@@ -131,9 +131,9 @@ export default function Login() {
                   <input type="checkbox" className="rounded w-4 h-4" />
                   <span className="text-muted-foreground">Remember me</span>
                 </label>
-                <a href="#" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+                <Link to="/forgot-password" className="text-indigo-600 dark:text-indigo-400 hover:underline">
                   Forgot password?
-                </a>
+                </Link>
               </div>
 
               {/* Login Button */}
@@ -160,19 +160,6 @@ export default function Login() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-card text-muted-foreground">Or</span>
-              </div>
-            </div>
-
-            {/* Demo Credentials */}
-            <div className="bg-blue-50 dark:bg-slate-800 p-4 rounded-lg mb-6">
-              <p className="text-xs font-semibold text-foreground mb-2">Demo Credentials:</p>
-              <div className="space-y-1 text-xs text-muted-foreground">
-                <p>
-                  <span className="font-medium">Email:</span> doctor@hospital.com
-                </p>
-                <p>
-                  <span className="font-medium">Password:</span> doctor123
-                </p>
               </div>
             </div>
 

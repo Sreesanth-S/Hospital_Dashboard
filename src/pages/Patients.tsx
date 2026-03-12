@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, FileText, TrendingUp } from "lucide-react";
-import { useStore } from "@/store";
+import { useStore } from "@/store/supabaseStore";
 import type { Patient } from "@/types";
 import { formatDistanceToNow } from "date-fns";
 import {

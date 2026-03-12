@@ -2,7 +2,7 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { useStore } from "@/store";
+import { useStore } from "@/store/supabaseStore";
 
 export function AnalyticsCharts() {
   const { patients } = useStore();
