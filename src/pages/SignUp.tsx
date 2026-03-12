@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Heart, Mail, Lock, User, Building, Stethoscope, Loader, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Heart, Mail, Lock, User, Stethoscope, Loader, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,13 +19,13 @@ export default function SignUp() {
   const navigate = useNavigate();
   const { signup, isLoading } = useAuthStore();
   const [step, setStep] = useState<"role" | "form">("role");
-  const [selectedRole, setSelectedRole] = useState<"doctor" | "nurse" | "admin" | null>(null);
+  const [selectedRole, setSelectedRole] = useState<"doctor" | "nurse" | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
-    role: "doctor" as "admin" | "doctor" | "nurse",
+    role: "doctor" as "doctor" | "nurse",
     specialization: "",
     hospitalName: "",
   });
@@ -47,14 +47,6 @@ export default function SignUp() {
       icon: Heart,
       color: "from-pink-500 to-pink-600",
       benefits: ["Monitor patients", "Record observations", "Care coordination"],
-    },
-    {
-      role: "admin" as const,
-      title: "Hospital Administrator",
-      description: "Administrative and management staff",
-      icon: Building,
-      color: "from-purple-500 to-purple-600",
-      benefits: ["Manage users", "System analytics", "Staff management"],
     },
   ];
 
@@ -102,7 +94,7 @@ export default function SignUp() {
     return valid;
   };
 
-  const handleRoleSelect = (role: "doctor" | "nurse" | "admin") => {
+  const handleRoleSelect = (role: "doctor" | "nurse") => {
     setSelectedRole(role);
     setFormData({ ...formData, role });
     setStep("form");

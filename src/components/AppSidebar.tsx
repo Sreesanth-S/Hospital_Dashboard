@@ -1,20 +1,22 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Settings, Heart, AlertTriangle, Bell
+  LayoutDashboard, Users, Settings, Heart, AlertTriangle, Bell, BriefcaseMedical
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
-
-const navItems = [
-  { title: "Dashboard", path: "/", icon: LayoutDashboard },
-  { title: "Patients", path: "/patients", icon: Users },
-  { title: "Risk Assessment", path: "/risk-assessment", icon: AlertTriangle },
-  { title: "Alerts", path: "/alerts", icon: Bell },
-  { title: "Settings", path: "/settings", icon: Settings },
-];
 
 export function AppSidebar() {
   const location = useLocation();
   const { user } = useAuthStore();
+  const navItems = [
+    { title: "Dashboard", path: "/", icon: LayoutDashboard },
+    { title: "Patients", path: "/patients", icon: Users },
+    ...(user?.role === "nurse"
+      ? [{ title: "Nurse Desk", path: "/nurse", icon: BriefcaseMedical }]
+      : []),
+    { title: "Risk Assessment", path: "/risk-assessment", icon: AlertTriangle },
+    { title: "Alerts", path: "/alerts", icon: Bell },
+    { title: "Settings", path: "/settings", icon: Settings },
+  ];
 
   const userInitials = user?.name
     .split(" ")
@@ -61,7 +63,7 @@ export function AppSidebar() {
           </div>
           <div>
             <p className="text-xs font-semibold text-sidebar-accent-foreground">{user?.name || "User"}</p>
-            <p className="text-[11px] text-sidebar-muted capitalize">{user?.role || "Admin"}</p>
+            <p className="text-[11px] text-sidebar-muted capitalize">{user?.role || "user"}</p>
           </div>
         </div>
       </div>

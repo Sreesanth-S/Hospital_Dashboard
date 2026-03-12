@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, FileText, TrendingUp } from "lucide-react";
+import { Search, FileText, TrendingUp, UserRoundSearch } from "lucide-react";
 import { useStore } from "@/store/supabaseStore";
 import type { Patient } from "@/types";
 import { formatDistanceToNow } from "date-fns";
@@ -26,6 +26,24 @@ export default function Patients() {
       ),
     [patients, searchQuery]
   );
+
+  useEffect(() => {
+    if (!selectedPatient) {
+      return;
+    }
+
+    const currentPatient = patients.find((patient) => patient.id === selectedPatient.id);
+    const visiblePatient = filteredPatients.find((patient) => patient.id === selectedPatient.id);
+
+    if (!currentPatient || !visiblePatient) {
+      setSelectedPatient(null);
+      return;
+    }
+
+    if (currentPatient !== selectedPatient) {
+      setSelectedPatient(currentPatient);
+    }
+  }, [filteredPatients, patients, selectedPatient]);
 
   const getRiskBgColor = (level: string) => {
     switch (level) {
@@ -261,9 +279,15 @@ export default function Patients() {
               </button>
             </div>
           ) : (
-            <Card className="shadow-sm">
-              <div className="p-8 text-center">
-                <p className="text-muted-foreground">Select a patient to view their details and reports</p>
+            <Card className="min-h-[600px] shadow-sm">
+              <div className="flex h-full min-h-[600px] flex-col items-center justify-center px-8 text-center">
+                <div className="mb-5 rounded-full bg-primary/10 p-4 text-primary">
+                  <UserRoundSearch className="h-8 w-8" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">No Patient Selected</h3>
+                <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+                  Select a patient from the list to view clinical details, current vitals, and medical reports.
+                </p>
               </div>
             </Card>
           )}

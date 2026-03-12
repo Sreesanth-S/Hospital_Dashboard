@@ -45,6 +45,22 @@ export interface Alert {
   resolved: boolean;
 }
 
+export type AppointmentStatus = "scheduled" | "completed" | "cancelled";
+
+export interface Appointment {
+  id: string;
+  patientId: string;
+  doctorId: string;
+  appointmentDate: string;
+  startTime: string;
+  endTime: string;
+  status: AppointmentStatus;
+  notes: string;
+  createdAt?: string;
+  patientName?: string;
+  doctorName?: string;
+}
+
 export type NotificationType = "alert" | "info" | "warning" | "success";
 
 export interface Notification {

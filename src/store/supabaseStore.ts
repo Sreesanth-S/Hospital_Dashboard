@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import type { Patient, Alert, Notification, NotificationType } from "@/types";
+import type { Patient, Alert, Appointment, Notification, NotificationType } from "@/types";
+import { appointmentService } from "@/lib/services/appointmentService";
 import { patientService } from "@/lib/services/patientService";
 import { alertService } from "@/lib/services/alertService";
 import { notificationService } from "@/lib/services/notificationService";
@@ -124,6 +125,7 @@ function validatePatientData(data: Partial<Patient>): boolean {
 interface StoreState {
   patients: Patient[];
   alerts: Alert[];
+  appointments: Appointment[];
   notifications: Notification[];
   selectedPatientId: string | null;
   searchQuery: string;
@@ -133,6 +135,7 @@ interface StoreState {
   // Data fetching
   fetchAllPatients: () => Promise<void>;
   fetchAllAlerts: () => Promise<void>;
+  fetchAllAppointments: () => Promise<void>;
   fetchAllNotifications: () => Promise<void>;
   initializeData: () => Promise<void>;
   
@@ -148,6 +151,15 @@ interface StoreState {
   
   // Alerts
   resolveAlert: (id: string) => Promise<void>;
+  addAppointment: (input: {
+    patientId: string;
+    doctorId: string;
+    appointmentDate: string;
+    startTime: string;
+    endTime: string;
+    notes: string;
+  }) => Promise<void>;
+  updateAppointmentStatus: (id: string, status: Appointment["status"]) => Promise<void>;
   
   // Patient operations
   updateDoctorNotes: (patientId: string, notes: string) => Promise<void>;
@@ -168,6 +180,7 @@ interface StoreState {
 export const useStore = create<StoreState>((set, get) => ({
   patients: [],
   alerts: [],
+  appointments: [],
   notifications: [],
   selectedPatientId: null,
   searchQuery: "",
@@ -197,6 +210,15 @@ export const useStore = create<StoreState>((set, get) => ({
     }
   },
 
+  fetchAllAppointments: async () => {
+    try {
+      const appointments = await appointmentService.fetchAllAppointments();
+      set({ appointments });
+    } catch (error) {
+      console.error("Error fetching appointments:", error);
+    }
+  },
+
   // Fetch all notifications from Supabase
   fetchAllNotifications: async () => {
     try {
@@ -212,6 +234,7 @@ export const useStore = create<StoreState>((set, get) => ({
     await Promise.all([
       get().fetchAllPatients(),
       get().fetchAllAlerts(),
+      get().fetchAllAppointments(),
       get().fetchAllNotifications(),
     ]);
   },
@@ -223,6 +246,7 @@ export const useStore = create<StoreState>((set, get) => ({
   addNotification: async (type, title, message, patientId?, action?) => {
     try {
       const newNotification = await notificationService.createNotification({
+        id: `N-${Date.now()}`,
         type,
         title,
         message,
@@ -285,6 +309,55 @@ export const useStore = create<StoreState>((set, get) => ({
       }));
     } catch (error) {
       console.error("Error resolving alert:", error);
+    }
+  },
+
+  addAppointment: async (input) => {
+    try {
+      const patient = get().patients.find((item) => item.id === input.patientId);
+      const appointment: Appointment = {
+        id: `APT-${Date.now()}`,
+        patientId: input.patientId,
+        doctorId: input.doctorId,
+        appointmentDate: input.appointmentDate,
+        startTime: input.startTime,
+        endTime: input.endTime,
+        status: "scheduled",
+        notes: input.notes,
+      };
+
+      const savedAppointment = await appointmentService.createAppointment(appointment);
+
+      await get().addNotification(
+        "info",
+        "Appointment Scheduled",
+        `${patient?.name ?? "Patient"} has an appointment on ${input.appointmentDate} from ${input.startTime} to ${input.endTime}.`,
+        input.patientId,
+        { label: "View Patient", path: `/patient/${input.patientId}` }
+      );
+
+      set((state) => ({
+        appointments: [...state.appointments, savedAppointment].sort((a, b) =>
+          `${a.appointmentDate}T${a.startTime}`.localeCompare(`${b.appointmentDate}T${b.startTime}`)
+        ),
+      }));
+    } catch (error) {
+      console.error("Error adding appointment:", error);
+      throw error;
+    }
+  },
+
+  updateAppointmentStatus: async (id, status) => {
+    try {
+      const updated = await appointmentService.updateAppointment(id, { status });
+      set((state) => ({
+        appointments: state.appointments.map((appointment) =>
+          appointment.id === id ? updated : appointment
+        ),
+      }));
+    } catch (error) {
+      console.error("Error updating appointment status:", error);
+      throw error;
     }
   },
 

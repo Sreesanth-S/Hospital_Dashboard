@@ -8,6 +8,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import Patients from "./pages/Patients";
 import PatientProfile from "./pages/PatientProfile";
+import NurseDesk from "./pages/NurseDesk";
 import RiskAssessment from "./pages/RiskAssessment";
 import Alerts from "./pages/Alerts";
 import Settings from "./pages/Settings";
@@ -79,6 +80,7 @@ const App = () => {
                     <Routes>
                       <Route path="/" element={<Dashboard />} />
                       <Route path="/patients" element={<Patients />} />
+                      <Route path="/nurse" element={<NurseDesk />} />
                       <Route path="/patient/:id" element={<PatientProfile />} />
                       <Route path="/risk-assessment" element={<RiskAssessment />} />
                       <Route path="/alerts" element={<Alerts />} />

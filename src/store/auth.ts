@@ -21,8 +21,19 @@ interface AuthState {
   initializeAuth: () => void;
 }
 
-function mapAuthUserToUser(authUser: any): User {
-  const meta = authUser?.user_metadata ?? {};
+type AuthUserLike = {
+  id: string;
+  email?: string | null;
+  user_metadata?: {
+    role?: string;
+    name?: string;
+    specialization?: string | null;
+    hospitalName?: string | null;
+  } | null;
+};
+
+function mapAuthUserToUser(authUser: AuthUserLike): User {
+  const meta = authUser.user_metadata ?? {};
   const metadataRole = meta.role;
   const role = metadataRole === "admin" || metadataRole === "doctor" || metadataRole === "nurse"
     ? metadataRole
@@ -53,6 +64,11 @@ export const useAuthStore = create<AuthState>((set) => ({
         const authUser = data.session?.user;
         if (authUser) {
           const mappedUser = mapAuthUserToUser(authUser);
+          if (mappedUser.role === "admin") {
+            await supabase.auth.signOut();
+            set({ user: null, isAuthenticated: false, isLoading: false });
+            return;
+          }
           await userService.upsertUser(mappedUser);
           set({
             user: mappedUser,
@@ -92,6 +108,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
 
       const mappedUser = mapAuthUserToUser(authUser);
+      if (mappedUser.role === "admin") {
+        await supabase.auth.signOut();
+        throw new Error("Admin login is not available from this portal.");
+      }
       await userService.upsertUser(mappedUser);
       set({ user: mappedUser, isAuthenticated: true });
     } catch (error) {

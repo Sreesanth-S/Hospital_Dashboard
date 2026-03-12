@@ -13,7 +13,6 @@ import { Eye, Trash2 } from "lucide-react";
 import { useStore } from "@/store/supabaseStore";
 import type { Patient } from "@/types";
 import { formatDistanceToNow } from "date-fns";
-import { PatientRegistrationForm } from "@/components/PatientRegistrationForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 
@@ -156,7 +155,6 @@ export function PatientTable() {
           <h3 className="text-base font-semibold text-card-foreground">Patient Monitoring</h3>
           <p className="text-xs text-muted-foreground mt-0.5">{filtered.length} patients being tracked</p>
         </div>
-        <PatientRegistrationForm />
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
