@@ -1,4 +1,5 @@
 # Maternal Health Monitor & Preeclampsia Predictor
+### This project is a part of Equitable Innovation Programme conducted by Lehigh University, USA and KGiSL Institute of Technology, Coimbatore
 This platform is a specialized clinical dashboard designed for the continuous monitoring of maternal patients. It integrates real-time health data with AI-driven predictive analytics to identify early warning signs of conditions like preeclampsia, enabling healthcare providers to intervene before critical complications arise.
 
 ## 🚀 Key Features
